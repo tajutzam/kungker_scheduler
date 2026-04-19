@@ -198,9 +198,8 @@ class JadwalController extends Controller
 
     public function laporan(Request $request)
     {
-        // Filter pencarian (opsional)
-        $bulan = $request->bulan ?? date('m');
-        $tahun = $request->tahun ?? date('Y');
+        $bulan = (int) ($request->bulan ?? date('m'));
+        $tahun = (int) ($request->tahun ?? date('Y'));
 
         $details = JadwalDetail::with(['akd', 'jadwalBulanan.approver'])
             ->whereHas('jadwalBulanan', function ($q) use ($bulan, $tahun) {

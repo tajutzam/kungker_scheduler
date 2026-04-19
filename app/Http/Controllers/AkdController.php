@@ -70,7 +70,7 @@ class AkdController extends Controller
         $request->validate([
             'nama_akd' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
-            'akd' => 'required'
+
         ]);
 
         $akd = Akd::findOrFail($id);

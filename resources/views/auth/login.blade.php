@@ -19,24 +19,25 @@
                 <div class="row w-100 mx-0">
                     <div class="col-lg-4 mx-auto">
                         <div class="auth-form-light text-left py-5 px-4 px-sm-5">
-                            <div class="brand-logo">
-                                <img src="{{ asset('assets') }}/images/logo.svg" alt="logo">
+                            <div class="brand-logo text-center"> <img src="{{ asset('assets') }}/logo.jpeg"
+                                    alt="logo" style="margin: 0 auto; display: block;">
                             </div>
                             <h4>Hello! let's get started</h4>
                             <h6 class="font-weight-light">Sign in to continue.</h6>
                             <form class="pt-3" method="post" action="{{ route('login.post') }}">
                                 @csrf
                                 <div class="form-group">
-                                    <input type="email" name="email" class="form-control form-control-lg" id="exampleInputEmail1"
-                                        placeholder="Email">
+                                    <input type="email" name="email" class="form-control form-control-lg"
+                                        id="exampleInputEmail1" placeholder="Email">
                                 </div>
                                 <div class="form-group">
                                     <input type="password" name="password" class="form-control form-control-lg"
                                         id="exampleInputPassword1" placeholder="Password">
                                 </div>
                                 <div class="mt-3">
-                                    <button class="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn"
-                                        >SIGN IN</button>
+                                    <button
+                                        class="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn">SIGN
+                                        IN</button>
                                 </div>
                                 <div class="my-2 d-flex justify-content-between align-items-center">
                                     <div class="form-check">
@@ -83,7 +84,7 @@
         });
 
         // 1. Success Message
-        @if(session('success'))
+        @if (session('success'))
             Toast.fire({
                 icon: 'success',
                 title: "{{ session('success') }}"
@@ -91,7 +92,7 @@
         @endif
 
         // 2. Single Error Message (Custom Flash)
-        @if(session('error'))
+        @if (session('error'))
             Toast.fire({
                 icon: 'error',
                 title: "{{ session('error') }}"
@@ -99,7 +100,7 @@
         @endif
 
         // 3. Validation Errors (Laravel $errors)
-        @if($errors->any())
+        @if ($errors->any())
             @php
                 $allErrors = implode('<br>', $errors->all());
             @endphp
