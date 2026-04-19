@@ -1,4 +1,13 @@
 <nav class="sidebar sidebar-offcanvas" id="sidebar">
+    <div class="sidebar-brand-wrapper d-flex align-items-center justify-content-center py-4 border-bottom border-secondary mb-2">
+        <a class="sidebar-brand brand-logo text-center" href="{{ route('admin.dashboard') }}">
+            <img src="{{ asset('assets') }}/logo.jpeg" alt="logo" style="width: 100px; height: auto;">
+            <p class="text-white small font-weight-bold mt-2 mb-0" style="letter-spacing: 1px; line-height: 1.2;">
+                DPRD KAB.<br>SIDOARJO
+            </p>
+        </a>
+    </div>
+
     <ul class="nav">
         <li class="nav-item sidebar-category">
             <p>Sistem Penjadwalan Kunker</p>
@@ -12,7 +21,7 @@
             </a>
         </li>
 
-        {{-- MENU ADMIN: Mengelola AKD & User (KF-01) [cite: 3, 5] --}}
+        {{-- MENU ADMIN --}}
         @if(auth()->user()->role == 'admin')
         <li class="nav-item sidebar-category">
             <p>Manajemen Data</p>
@@ -54,7 +63,7 @@
         </li>
         @endif
 
-        {{-- MENU BANMUS: Persetujuan & Monitoring (KF-05) [cite: 3, 5] --}}
+        {{-- MENU BANMUS --}}
         @if(auth()->user()->role == 'bamus')
         <li class="nav-item sidebar-category">
             <p>Menu Banmus</p>
@@ -73,7 +82,6 @@
             <span></span>
         </li>
 
-        {{-- Laporan Jadwal Final: Akses Berbeda Route (KF-06) [cite: 5] --}}
         <li class="nav-item">
             @php
                 $reportRoute = route('admin.jadwal.laporan')
