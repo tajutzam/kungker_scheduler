@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Akd;
 use App\Models\JadwalBulanan;
 use App\Models\JadwalDetail;
+use App\Models\Kegiatan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -24,7 +25,8 @@ class JadwalController extends Controller
     public function create()
     {
         $akds = Akd::all();
-        return view('pages.jadwal.create', compact('akds'));
+        $kegiatans = Kegiatan::all();
+        return view('pages.jadwal.create', compact('akds', 'kegiatans'));
     }
 
     public function edit($id)
@@ -44,8 +46,6 @@ class JadwalController extends Controller
     public function store(Request $request)
     {
         $this->validateRequest($request);
-
-        // Aturan Bisnis: Cek Kuota & Bentrok
         $error = $this->checkBusinessRules($request);
         if ($error) return back()->with('error', $error)->withInput();
 
@@ -58,11 +58,19 @@ class JadwalController extends Controller
             ]);
 
             foreach ($request->details as $detail) {
-                $jadwal->details()->create($detail);
+                // Pastikan array ini memiliki key yang sesuai dengan kolom tabel jadwal_details
+                $jadwal->details()->create([
+                    'akd_id'      => $detail['akd_id'] ?: null, // Simpan null jika kosong
+                    'kegiatan_id' => $detail['kegiatan_id'],
+                    'tipe_kunjungan' => $detail['tipe_kunjungan'],
+                    'tujuan'      => $detail['tujuan'],
+                    'tgl_mulai'   => $detail['tgl_mulai'],
+                    'tgl_selesai' => $detail['tgl_selesai'],
+                ]);
             }
         });
 
-        return redirect()->route('admin.jadwal.index')->with('success', 'Jadwal berhasil disusun (Status: Draft).');
+        return redirect()->route('admin.jadwal.index')->with('success', 'Jadwal berhasil dibuat secara otomatis.');
     }
 
     public function update(Request $request, $id)
@@ -95,7 +103,7 @@ class JadwalController extends Controller
 
     public function show($id)
     {
-        $jadwal = JadwalBulanan::with(['details.akd', 'user', 'approver'])->findOrFail($id);
+        $jadwal = JadwalBulanan::with(['details.akd', 'user', 'approver', 'details.kegiatanDetail'])->findOrFail($id);
         return view('pages.jadwal.show', compact('jadwal'));
     }
 
@@ -128,10 +136,11 @@ class JadwalController extends Controller
             'bulan' => 'required|integer|between:1,12',
             'tahun' => 'required|integer',
             'details' => 'required|array|min:1',
-            'details.*.akd_id' => 'required|exists:akds,id',
+            'details.*.akd_id' => 'nullable|exists:akds,id', // Diubah jadi nullable
+            'details.*.kegiatan_id' => 'required|exists:kegiatans,id', // Wajib ada dari master
             'details.*.tipe_kunjungan' => 'required|in:DP,LP',
             'details.*.tgl_mulai' => 'required|date',
-            'details.*.kegiatan' => 'required|string',
+            'details.*.tujuan' => 'required|string|max:255',
             'details.*.tgl_selesai' => 'required|date|after_or_equal:details.*.tgl_mulai',
         ]);
     }
@@ -142,6 +151,11 @@ class JadwalController extends Controller
         $quotaInRequest = [];
 
         foreach ($inputDetails as $detail) {
+            // Jika Non-AKD, lewati pengecekan kuota kunker
+            if (empty($detail['akd_id'])) {
+                continue;
+            }
+
             $akd = Akd::findOrFail($detail['akd_id']);
             $start = $detail['tgl_mulai'];
             $end = $detail['tgl_selesai'];
@@ -154,39 +168,21 @@ class JadwalController extends Controller
                 return "Durasi {$akd->nama_akd} ({$tipe}) harus {$wajib} hari.";
             }
 
-            // 2. Validasi Kuota (Komisi=2, Non=1)
             $key = $akd->id . '_' . $tipe;
             $quotaInRequest[$key] = ($quotaInRequest[$key] ?? 0) + 1;
 
-            // Ambil kuota yang sudah terpakai di database untuk periode ini
-            $alreadyUsed = JadwalDetail::where('akd_id', $akd->id)
-                ->where('tipe_kunjungan', $tipe)
-                ->whereHas('jadwalBulanan', function ($q) use ($request, $excludeJadwalId) {
-                    $q->where('bulan', $request->bulan)
-                        ->where('tahun', $request->tahun)
-                        ->where('status', '!=', 'ditolak');
-                    if ($excludeJadwalId) $q->where('id', '!=', $excludeJadwalId);
-                })->count();
 
-            $limit = ($akd->kategori == 'komisi') ? 2 : 1;
-            if (($alreadyUsed + $quotaInRequest[$key] - 1) >= $limit) {
-                return "Kuota {$tipe} untuk {$akd->nama_akd} sudah habis (Maks: {$limit}).";
-            }
-
-            // 3. Validasi Bentrok Tanggal (Overlap)
             $bentrok = JadwalDetail::where('akd_id', $akd->id)
                 ->where(function ($query) use ($start, $end) {
-                    $query->whereBetween('tgl_mulai', [$start, $end])
-                        ->orWhereBetween('tgl_selesai', [$start, $end])
-                        ->orWhere(function ($q) use ($start, $end) {
-                            $q->where('tgl_mulai', '<=', $start)->where('tgl_selesai', '>=', $end);
-                        });
+                    $query->where(function ($q) use ($start, $end) {
+                        $q->whereBetween('tgl_mulai', [$start, $end])
+                            ->orWhereBetween('tgl_selesai', [$start, $end]);
+                    });
                 })
                 ->whereHas('jadwalBulanan', function ($q) use ($excludeJadwalId) {
-                    $q->where('status', 'disetujui'); // Bentrok jika menabrak jadwal FINAL
+                    $q->where('status', 'disetujui');
                     if ($excludeJadwalId) $q->where('id', '!=', $excludeJadwalId);
-                })
-                ->first();
+                })->first();
 
             if ($bentrok) {
                 return "Bentrok! {$akd->nama_akd} memiliki jadwal FINAL pada {$bentrok->tgl_mulai} s/d {$bentrok->tgl_selesai}.";

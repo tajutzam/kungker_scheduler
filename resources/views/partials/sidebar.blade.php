@@ -41,6 +41,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('admin.users.index') }}">Data User</a>
                     </li>
+                     <li class="nav-item">
+                        <a class="nav-link" href="{{ route('admin.kegiatan.index') }}">Data Kegiatans</a>
+                    </li>
                 </ul>
             </div>
         </li>

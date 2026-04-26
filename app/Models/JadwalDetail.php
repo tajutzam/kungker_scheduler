@@ -19,8 +19,14 @@ class JadwalDetail extends Model
         'tgl_mulai',
         'tgl_selesai',
         'kegiatan',
+        'kegiatan_id',
         'tipe_kunjungan'
     ];
+
+
+    public function kegiatanDetail(){
+        return $this->belongsTo(Kegiatan::class, 'kegiatan_id');
+    }
 
     /**
      * Kembali ke Header Jadwal Bulanan

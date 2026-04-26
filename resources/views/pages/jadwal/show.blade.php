@@ -33,7 +33,7 @@
                                     <i class="mdi mdi-calendar-range text-muted mr-1"></i>
                                     {{ \Carbon\Carbon::parse($d->tgl_mulai)->format('d M Y') }} s/d {{ \Carbon\Carbon::parse($d->tgl_selesai)->format('d M Y') }}
                                 </td>
-                                <td>{{ $d->kegiatan }}</td>
+                                <td>{{ $d->kegiatan ?? $d->kegiatanDetail->name }}</td>
                             </tr>
                             @endforeach
                         </tbody>

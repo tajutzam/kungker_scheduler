@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\AkdController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\JadwalController;
+use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +18,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth', 'role:admin'])->prefix('/admin')->name('admin.')->group(function () {
     Route::resource('akd', AkdController::class);
+    Route::resource('kegiatan', KegiatanController::class);
+
     Route::resource('users', UserController::class);
 
     Route::resource('jadwal', JadwalController::class);

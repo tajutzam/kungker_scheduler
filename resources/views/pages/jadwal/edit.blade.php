@@ -56,10 +56,10 @@
 
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="font-weight-bold text-primary mb-0">
-                            <i class="mdi mdi-vector-arrange-below mr-1"></i> 2. Revisi Detail Jadwal (Generate Ulang)
+                            <i class="mdi mdi-vector-arrange-below mr-1"></i> 2. Revisi Detail Jadwal
                         </h6>
-                        <button type="button" class="btn btn-success btn-sm shadow-sm" id="addDetail">
-                            <i class="mdi mdi-plus"></i> Tambah Baris AKD
+                        <button type="button" class="btn btn-secondary btn-sm shadow-sm" id="addDetail">
+                            <i class="mdi mdi-plus"></i> Tambah Baris Baru
                         </button>
                     </div>
 
@@ -80,8 +80,8 @@
                                 @foreach($jadwal->details as $index => $detail)
                                 <tr class="detail-row">
                                     <td>
-                                        <select name="details[{{ $index }}][akd_id]" class="form-control akd-select" required>
-                                            <option value="">-- Pilih AKD --</option>
+                                        <select name="details[{{ $index }}][akd_id]" class="form-control akd-select">
+                                            <option value="">-- Non-AKD / Umum --</option>
                                             @foreach($akds as $akd)
                                                 <option value="{{ $akd->id }}" data-kategori="{{ $akd->kategori }}"
                                                     {{ $detail->akd_id == $akd->id ? 'selected' : '' }}>
@@ -97,15 +97,20 @@
                                         </select>
                                     </td>
                                     <td><input type="text" name="details[{{ $index }}][tujuan]" class="form-control" value="{{ $detail->tujuan }}" required></td>
-                                    <td><input type="text" name="details[{{ $index }}][kegiatan]" class="form-control" value="{{ $detail->kegiatan }}" required></td>
+                                    <td>
+                                        <select name="details[{{ $index }}][kegiatan_id]" class="form-control" required>
+                                            <option value="">-- Pilih Kegiatan --</option>
+                                            @foreach($kegiatans as $keg)
+                                                <option value="{{ $keg->id }}" {{ $detail->kegiatan_id == $keg->id ? 'selected' : '' }}>
+                                                    {{ $keg->nama }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </td>
                                     <td><input type="date" name="details[{{ $index }}][tgl_mulai]" class="form-control tgl-mulai" value="{{ $detail->tgl_mulai }}" required></td>
                                     <td><input type="date" name="details[{{ $index }}][tgl_selesai]" class="form-control tgl-selesai" value="{{ $detail->tgl_selesai }}" readonly required></td>
                                     <td class="text-center">
-                                        @if($index == 0)
-                                            <i class="mdi mdi-lock text-muted"></i>
-                                        @else
-                                            <button type="button" class="btn btn-outline-danger btn-sm remove-row"><i class="mdi mdi-trash-can-outline"></i></button>
-                                        @endif
+                                        <button type="button" class="btn btn-sm btn-secondary remove-row"><i class="mdi mdi-trash-can"></i></button>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -114,7 +119,7 @@
                     </div>
 
                     <div class="mt-5 d-flex justify-content-end" style="gap: 15px;">
-                        <button type="submit" class="btn btn-warning btn-lg px-5 shadow text-white">
+                        <button type="submit" class="btn btn-secondary btn-lg px-5 shadow">
                             <i class="mdi mdi-send mr-2"></i>Simpan Revisi & Ajukan Kembali
                         </button>
                     </div>
@@ -129,7 +134,16 @@
 <script>
     let detailIdx = {{ count($jadwal->details) }};
 
-    // Fungsi Hitung Tanggal (Flowchart: DP 2 hari, LP 3 hari)
+    function formatDate(date) {
+        let d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+        return [year, month, day].join('-');
+    }
+
     function calculateEndDate(row) {
         const tglMulai = row.find('.tgl-mulai').val();
         const tipe = row.find('.tipe-select').val();
@@ -139,11 +153,7 @@
             let days = (tipe === 'DP') ? 1 : 2;
             let end = new Date(start);
             end.setDate(start.getDate() + days);
-
-            let y = end.getFullYear();
-            let m = String(end.getMonth() + 1).padStart(2, '0');
-            let d = String(endDate = end.getDate()).padStart(2, '0');
-            row.find('.tgl-selesai').val(`${y}-${m}-${d}`);
+            row.find('.tgl-selesai').val(formatDate(end));
         }
     }
 
@@ -151,13 +161,12 @@
         calculateEndDate($(this).closest('tr'));
     });
 
-    // Tambah Baris
     $('#addDetail').on('click', function() {
         let newRow = `
             <tr class="detail-row">
                 <td>
-                    <select name="details[${detailIdx}][akd_id]" class="form-control akd-select" required>
-                        <option value="">-- Pilih AKD --</option>
+                    <select name="details[${detailIdx}][akd_id]" class="form-control akd-select">
+                        <option value="">-- Non-AKD / Umum --</option>
                         @foreach($akds as $akd)
                             <option value="{{ $akd->id }}" data-kategori="{{ $akd->kategori }}">{{ $akd->nama_akd }}</option>
                         @endforeach
@@ -165,16 +174,23 @@
                 </td>
                 <td>
                     <select name="details[${detailIdx}][tipe_kunjungan]" class="form-control tipe-select" required>
-                        <option value="DP">Dalam Prov (2 Hari)</option>
-                        <option value="LP">Luar Prov (3 Hari)</option>
+                        <option value="DP">Dalam Prov</option>
+                        <option value="LP">Luar Prov</option>
                     </select>
                 </td>
                 <td><input type="text" name="details[${detailIdx}][tujuan]" class="form-control" required></td>
-                <td><input type="text" name="details[${detailIdx}][kegiatan]" class="form-control" required></td>
+                <td>
+                    <select name="details[${detailIdx}][kegiatan_id]" class="form-control" required>
+                        <option value="">-- Pilih Kegiatan --</option>
+                        @foreach($kegiatans as $keg)
+                            <option value="{{ $keg->id }}">{{ $keg->nama }}</option>
+                        @endforeach
+                    </select>
+                </td>
                 <td><input type="date" name="details[${detailIdx}][tgl_mulai]" class="form-control tgl-mulai" required></td>
                 <td><input type="date" name="details[${detailIdx}][tgl_selesai]" class="form-control tgl-selesai" readonly required></td>
                 <td class="text-center">
-                    <button type="button" class="btn btn-outline-danger btn-sm remove-row"><i class="mdi mdi-trash-can-outline"></i></button>
+                    <button type="button" class="btn btn-sm btn-secondary remove-row"><i class="mdi mdi-trash-can"></i></button>
                 </td>
             </tr>
         `;
@@ -184,7 +200,6 @@
 
     $(document).on('click', '.remove-row', function() { $(this).closest('tr').remove(); });
 
-    // Validasi Submit (Sesuai Flowchart Kuota)
     $('#formJadwal').on('submit', function(e) {
         let quota = {};
         let isValid = true;
@@ -192,11 +207,13 @@
 
         $('.detail-row').each(function() {
             let opt = $(this).find('.akd-select option:selected');
-            let kat = opt.data('kategori');
-            let tipe = $(this).find('.tipe-select').val();
             let akdId = opt.val();
 
+            // Jika Non-AKD (akdId kosong), tidak perlu cek kuota
             if(!akdId) return;
+
+            let kat = opt.data('kategori');
+            let tipe = $(this).find('.tipe-select').val();
             let key = akdId + '_' + tipe;
             quota[key] = (quota[key] || 0) + 1;
 
